@@ -34,7 +34,7 @@ index_freq: 0 yearly, 1 quarterly, 2 monthly
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -45,22 +45,34 @@ from .dates import tds_m, tds_q, calds_m_string, calds_q_string, calds_a_string
 
 @dataclass
 class Tables6Config:
-    index_freq: int = 2  # 0 yearly, 1 quarterly, 2 monthly
+    index_freq: int = 2
     seasadj: int = 1
-    sel_countries: list[int] = None
+    sel_countries: list[int] | None = None
     plotvariables: int = 0
     h: int = 1
-    h2_base: int = 4  # in MATLAB: 4 quarters; if monthly multiplies by 12
-    data_dir: Path = Path(".")
+    h2_base: int = 4
+
+    data_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parents[1] / "data")
+
 
     def __post_init__(self):
         if self.sel_countries is None:
             self.sel_countries = [2,3,4,7,11,13,14,15,16,18,19,20,22,26,30,31,32,36]
 
 def _read_xls(path: Path, sheet: int) -> np.ndarray:
-    # MATLAB xlsread(..., sheetIndex) uses 1-based sheet index. pandas uses 0-based.
-    df = pd.read_excel(path, sheet_name=sheet-1, header=None, engine="xlrd")
+    path = Path(path).expanduser().resolve()
+    df = pd.read_excel(str(path), sheet_name=sheet - 1, header=None, engine="xlrd")
+    # Convert everything to numeric; non-numeric becomes NaN
+    df = df.apply(pd.to_numeric, errors="coerce")
     return df.to_numpy(dtype=float)
+
+def log_nan(x: np.ndarray) -> np.ndarray:
+    """Elementwise log; returns NaN where x<=0 or not finite."""
+    x = np.asarray(x, dtype=float)
+    out = np.full_like(x, np.nan, dtype=float)
+    mask = np.isfinite(x) & (x > 0)
+    out[mask] = np.log(x[mask])
+    return out
 
 def run(cfg: Tables6Config) -> dict[str, np.ndarray]:
     d = cfg.data_dir
@@ -120,25 +132,30 @@ def run(cfg: Tables6Config) -> dict[str, np.ndarray]:
     idiff = i - mmult(i[:, -1], np.ones_like(i))
     D_idiff = differ(idiff, 1)
 
-    ydiff = np.log(y) - mmult(np.log(y[:, -1]), np.ones_like(y))
+    ylog = log_nan(y)
+    ydiff = ylog - mmult(ylog[:, -1], np.ones_like(ylog))
     D_ydiff = differ(ydiff, 1)
 
-    mdiff = np.log(m) - mmult(np.log(m[:, -1]), np.ones_like(m))
+    mlog = log_nan(m)
+    mdiff = mlog - mmult(mlog[:, -1], np.ones_like(mlog))
     D_mdiff = differ(mdiff, 1)
 
-    cpidiff = np.log(cpi) - mmult(np.log(cpi[:, -1]), np.ones_like(cpi))
+    cpilog = log_nan(cpi)
+    cpidiff = cpilog - mmult(cpilog[:, -1], np.ones_like(cpilog))
     D_cpidiff = differ(cpidiff, 1)
 
-    Dcpi = np.log(cpi)
+    Dcpi = cpilog
     D_cpi = differ(Dcpi, 1)
 
-    e_log = np.log(e)
+    e_log = log_nan(e)
     D_e = differ(e_log, 1)
 
-    tbilldiff = np.log(tbill) - mmult(np.log(tbill[:, -1]), np.ones_like(tbill))
+    tbilllog = log_nan(tbill)
+    tbilldiff = tbilllog - mmult(tbilllog[:, -1], np.ones_like(tbilllog))
     D_tbilldiff = differ(tbilldiff, 1)
 
-    i3diff = np.log(i3) - mmult(np.log(i3[:, -1]), np.ones_like(i3))
+    i3log = log_nan(i3)
+    i3diff = i3log - mmult(i3log[:, -1], np.ones_like(i3log))
     D_i3diff = differ(i3diff, 1)
 
     # Forecast horizons
@@ -170,8 +187,13 @@ def main():
     ap.add_argument("--data-dir", type=str, default=".")
     args = ap.parse_args()
 
-    cfg = Tables6Config(index_freq=args.index_freq, seasadj=args.seasadj, data_dir=Path(args.data_dir))
+    cfg = Tables6Config(
+    index_freq=args.index_freq,
+    seasadj=args.seasadj,
+    data_dir=Path(args.data_dir) / "data"
+)
     out = run(cfg)
+
     print("Loaded and transformed data.")
     print("Keys:", ", ".join(out.keys()))
     print("D_e shape:", out["D_e"].shape)
