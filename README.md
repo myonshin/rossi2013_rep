@@ -30,14 +30,14 @@ pip install numpy pandas scipy xlrd
 python -m rossi.tables6 --index-freq 2 --seasadj 1 --data-dir ./data
 ```
 
-## What's not yet ported
-The high-level forecast evaluation wrappers called by `tables6.m` (e.g. `testsoos`, `testsPANEL`,
-`testsforBMA`, CW tests, fluctuation tests, etc.) are not fully implemented in this first pass.
-The building blocks to port those routines are included in `rossi/gmm.py` and `rossi/tvp.py`.
-
-If you want end-to-end reproduction of the paper tables, we should next port:
+## TBD
+The high-level forecast evaluation wrappers called by `tables6.m` are not fully implemented. 
 - `testsoos*.m` (out-of-sample forecast evaluation and CW tests)
 - `CW_test_nan_general.m`
 - `Fluctuationh.m`
 - `testsPANEL.m`
 - `testsforBMA.m` / BMA helpers
+
+The building blocks to port those routines are included in `rossi/gmm.py` and `rossi/tvp.py`.
+
+Also, calds_a_string.m is missing as it was missing also in the original replication material.
