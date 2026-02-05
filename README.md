@@ -1,4 +1,4 @@
-# Rossi JEL (Revised) — Python translation (partial)
+# Rossi (2013, JEL) Replication (wip as of Feb 2026)
 
 This is a partial replication of `tables6.m` in "Rossi, Barbara (2013). "Exchange Rate Predictability." Journal of Economic Literature 51(4): 1063-1119", and its dependencies in python.
 
