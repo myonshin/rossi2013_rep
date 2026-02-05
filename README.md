@@ -1,6 +1,6 @@
 # Rossi JEL (Revised) — Python translation (partial)
 
-This is a pragmatic Python port of the core MATLAB utilities and the main driver `tables6.m`.
+This is a partial replication of `tables6.m` in "Rossi, Barbara (2013). "Exchange Rate Predictability." Journal of Economic Literature 51(4): 1063-1119", and its dependencies in python.
 
 ## What's included
 - `rossi/utils.py`: ports of `mmult.m`, `differ.m`, `filterNAN.m`, `cleanNaN.m` (as `clean_nan_rows`)
